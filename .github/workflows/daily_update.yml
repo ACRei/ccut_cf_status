@@ -1,0 +1,66 @@
+name: daily_update
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: 0 0 8 * *
+  release:
+    types: [published]
+
+jobs:
+  merge_upstream:
+    name: 更新CF数据
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: master
+          fetch-depth: 0
+          lfs: true
+
+      - name: Space cleanup
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          docker rmi `docker images -q`
+          sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d /usr/local/lib/android
+          sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* adoptopenjdk* mysql* php* mongodb* dotnet* moby* snapd* || true
+          sudo -E apt-get update
+          sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python3-pip unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler antlr3 gperf swig libtinfo5
+          sudo -E apt-get -y autoremove --purge
+          sudo -E apt-get clean
+          df -h
+
+      - name: Set git config
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global pull.rebase false
+          git config --global --list
+
+      - name: pip install
+        run: |
+          pip install httpx pandas
+
+      - name: update codeforces data
+        run: python3 main.py
+
+      - name: Apply commit changes
+        run: |
+          if [ -f ./.git/MERGE_MSG ]; then
+          mkdir ./tmp && cp ./.git/MERGE_MSG ./tmp/message
+          sed -i "1c [bot] AutoMerging: merge all upstream's changes:" ./tmp/message
+          # sed -i '/^\#.*/d' ./tmp/message
+          git commit --file="./tmp/message"
+          else
+          echo "There is no merge commits."
+          fi
+
+      - name: Push Commits
+        env:
+          DOWNSTREAM_BRANCH: master
+        run: git push origin $DOWNSTREAM_BRANCH
