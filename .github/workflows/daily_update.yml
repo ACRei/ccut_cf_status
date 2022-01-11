@@ -5,7 +5,7 @@ on:
     branches:
       - master
   schedule:
-    - cron: 0 0 8 * *
+    - cron: 0 8 * * *
   release:
     types: [published]
 
@@ -22,13 +22,6 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: apt install
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          sudo -E apt-get update
-          sudo -E apt-get -y install build-essential python3 python3-pip 
-
       - name: Set git config
         run: |
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -43,18 +36,10 @@ jobs:
       - name: update codeforces data
         run: python3 main.py
 
-      - name: Apply commit changes
-        run: |
-          if [ -f ./.git/MERGE_MSG ]; then
-          mkdir ./tmp && cp ./.git/MERGE_MSG ./tmp/message
-          sed -i "1c [bot] AutoMerging: merge all upstream's changes:" ./tmp/message
-          # sed -i '/^\#.*/d' ./tmp/message
-          git commit --file="./tmp/message"
-          else
-          echo "There is no merge commits."
-          fi
-
       - name: Push Commits
         env:
           DOWNSTREAM_BRANCH: master
-        run: git push origin $DOWNSTREAM_BRANCH
+        run: |
+          git add --all
+          git commit -m "Daily Auto Update"
+          git push origin $DOWNSTREAM_BRANCH
