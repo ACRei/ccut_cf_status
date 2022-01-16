@@ -38,12 +38,12 @@ async def main():
     for id in df['CFID']:
         today_solved.append(await solved(id))
         today_rank.append(await cfrank(id))
-        await asyncio.sleep(10) # API接口访问有限制，所以要间隔 10s
+        await asyncio.sleep(10)  # API接口访问有限制，所以要间隔 10s
         print(f'{id} {str(today_solved[-1])} {str(today_rank[-1])} \n')
 
     df[f'CF做题数_{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}'] = today_solved
     df[f'CF天梯分_{time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}'] = today_rank
     print(df)
-    df.to_excel(FILE_NAME)
+    df.to_excel(FILE_NAME, index=False)
 
 asyncio.run(main())
