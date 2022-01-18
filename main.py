@@ -9,8 +9,11 @@ FILE_NAME = 'data.xlsx'
 async def solved(username):
     url = 'https://ojhunt.com/api/crawlers/codeforces/'+username
     print(url)
-    async with httpx.AsyncClient() as client:
-        r = await client.get(url)
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(url)
+    except:
+        return -1
     print(r)
     json = r.json()
     if(json['error']):
